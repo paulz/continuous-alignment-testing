@@ -190,13 +190,13 @@ def is_within_expected(success_rate: float, failure_count: int, sample_size: int
     if measured_success_count < interval_min:
         min_failure_count = sample_size - interval_min
         print(
-            f"Failure count {failure_count} is below the expected minimum of {min_failure_count}\n"
+            f"Failure count {failure_count} is above the expected maximum of {min_failure_count}\n"
             + f" current success rate {measured_success_rate} < lower limit:{prop_min:.3f}"
         )
     if measured_success_count > interval_max:
         print(
             f"Success count {measured_success_count} is greater than maximum of {interval_max}\n"
-            + f" current success rate {measured_success_rate:.3f} > higher limit: {prop_max:.3f}\n"
+            + f" current success rate {measured_success_rate:.4f} > higher limit: {prop_max:.4f}\n"
         )
     return is_within_a_range(
         measured_success_count,
@@ -239,20 +239,51 @@ def test_is_within_expected(success_rate, failure_count, sample_size, message):
 @pytest.mark.parametrize(
     "failure_count, sample_size, expected_rate, message",
     [
-        (3, 5, 0.8, "40% success rate is below expected 80% success rate"),
-        (1, 50000, 0.9997, "50% success rate is below expected 97% success rate"),
-        (0, 100, 0.97, "100% success rate is not within 97% success rate"),
-        (0, 100, 0.9736, "97.36% success rate is not within 100% success rate"),
+        (6, 100, 0.97, "Failure count 6 is above the expected maximum of 5"),
+        (3, 5, 0.8, "Failure count 3 is above the expected maximum of 2"),
+        (
+            1,
+            50000,
+            0.9997,
+            [
+                "Success count 49999 is greater than maximum of 49991",
+                " current success rate 1.0000 > higher limit: 0.9998",
+            ],
+        ),
+        (
+            0,
+            100,
+            0.97,
+            [
+                "Success count 100 is greater than maximum of 99",
+                " current success rate 1.0000 > higher limit: 0.9981",
+            ],
+        ),
+        (
+            0,
+            100,
+            0.9736,
+            [
+                "Success count 100 is greater than maximum of 99",
+                " current success rate 1.0000 > higher limit: 0.9981",
+            ],
+        ),
         (
             1,
             134,
             0.97,
-            "At 134 we can say that with 90% confidence 1 failure is 99.253731% beyond 97% success rate",
+            "Success count 133 is greater than maximum of 132",
         ),
     ],
 )
-def test_not_is_within_expected(failure_count, sample_size, expected_rate, message):
+def test_not_is_within_expected(failure_count, sample_size, expected_rate, message, capsys):
     assert not is_within_expected(expected_rate, failure_count, sample_size), message
+    captured = str(capsys.readouterr().out)
+    if isinstance(message, list):
+        for m in message:
+            assert m in captured
+    else:
+        assert message in captured
 
 
 def test_success_rate():
