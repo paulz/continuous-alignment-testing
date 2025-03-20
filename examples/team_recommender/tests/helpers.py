@@ -272,7 +272,10 @@ def test_is_within_expected(success_rate, failure_count, sample_size, message):
             1,
             134,
             0.97,
-            "Success count 133 is greater than maximum of 132",
+            [
+                "Success count 133 is greater than maximum of 132",
+                " current success rate 0.9925 > higher limit: 0.9896",
+            ],
         ),
     ],
 )
