@@ -273,8 +273,8 @@ def test_is_within_expected(success_rate, failure_count, sample_size, message):
             134,
             0.97,
             [
-                "Success count 133 is greater than maximum of 132",
-                " current success rate 0.9925 > higher limit: 0.9896",
+                "Success count 133 is greater than maximum of 132\n",
+                " current success rate 0.9925 > higher limit: 0.9896\n",
             ],
         ),
     ],
@@ -282,11 +282,7 @@ def test_is_within_expected(success_rate, failure_count, sample_size, message):
 def test_not_is_within_expected(failure_count, sample_size, expected_rate, message, capsys):
     assert not is_within_expected(expected_rate, failure_count, sample_size), message
     captured = str(capsys.readouterr().out)
-    if isinstance(message, list):
-        for m in message:
-            assert m in captured
-    else:
-        assert message in captured
+    assert all(m in captured for m in (message if isinstance(message, list) else [message]))
 
 
 def test_success_rate():
