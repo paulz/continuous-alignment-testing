@@ -186,17 +186,17 @@ def is_within_expected(success_rate: float, failure_count: int, sample_size: int
 
     interval_min, interval_max = success_analysis.confidence_interval_count
     print(f"Expecting {measured_success_count} to be between {interval_min} and {interval_max}")
+    prop_min, prop_max = success_analysis.confidence_interval_prop
     if measured_success_count < interval_min:
+        min_failure_count = sample_size - interval_min
         print(
-            f"Failure count {failure_count} is below the minimum of {interval_min},"
-            + f" current success rate {measured_success_rate} < "
-            + f"lower limit:{success_analysis.confidence_interval_prop[0]:.3f}"
+            f"Failure count {failure_count} is below the expected minimum of {min_failure_count}\n"
+            + f" current success rate {measured_success_rate} < lower limit:{prop_min:.3f}"
         )
     if measured_success_count > interval_max:
         print(
-            f"Failure count {failure_count} is above the maximum of {interval_max},"
-            + f" current success rate {measured_success_rate} > "
-            + f"higher limit:{success_analysis.confidence_interval_prop[1]:.3f}"
+            f"Success count {measured_success_count} is greater than maximum of {interval_max}\n"
+            + f" current success rate {measured_success_rate:.3f} > higher limit: {prop_max:.3f}\n"
         )
     return is_within_a_range(
         measured_success_count,
@@ -212,16 +212,21 @@ def is_within_a_range(value: float, left: float, right: float) -> bool:
 @pytest.mark.parametrize(
     "success_rate, failure_count, sample_size, message",
     [
-        (0.8, 0, 5, None),
-        (0.8, 2, 5, None),
-        (0.8, 26, 100, None),
-        (0.8, 14, 100, None),
-        (0.97, 1, 8, None),
-        (0.97, 0, 1, "after measuring 2x 100 runs and getting 3 failures"),
-        (0.97, 1, 133, "At 133 we can say that with 90% confidence 1 failure is within 97% success rate"),
+        (0.8, 0, 5, "100% success rate is within 80% success rate"),
+        (0.8, 2, 5, "60% success rate is within 80% success rate"),
+        (0.8, 26, 100, "74% success rate is within 80% success rate"),
+        (0.8, 14, 100, "86% success rate is within 80% success rate"),
+        (0.97, 1, 8, "87.5% success rate is within 97% success rate"),
+        (0.97, 0, 1, "100% success rate is within 97% success rate"),
+        (
+            0.97,
+            1,
+            133,
+            "At 133 we can say that with 90% confidence 1 failure is 99.25% and within 97% success rate",
+        ),
         (0.98, 0, 100, "97.5% success rate is within 100% success rate"),
         (0.97999999999999999, 0, 100, "97.37% success rate is within 100% success rate"),
-        (0.5, 1, 2, None),
+        (0.5, 1, 2, "50% success rate is within 50% success rate"),
     ],
 )
 def test_is_within_expected(success_rate, failure_count, sample_size, message):
@@ -238,7 +243,12 @@ def test_is_within_expected(success_rate, failure_count, sample_size, message):
         (1, 50000, 0.9997, "50% success rate is below expected 97% success rate"),
         (0, 100, 0.97, "100% success rate is not within 97% success rate"),
         (0, 100, 0.9736, "97.36% success rate is not within 100% success rate"),
-        (1, 134, 0.97, "At 134 we can say that with 90% confidence 1 failure is within 97% success rate"),
+        (
+            1,
+            134,
+            0.97,
+            "At 134 we can say that with 90% confidence 1 failure is 99.253731% beyond 97% success rate",
+        ),
     ],
 )
 def test_not_is_within_expected(failure_count, sample_size, expected_rate, message):
